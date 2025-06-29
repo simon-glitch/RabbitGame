@@ -30,9 +30,11 @@ public class Main {
 
         Timer folow = new Timer(350, null);
         Timer checkCatch = new Timer(50, null);
-
+        
         frame.addKeyListener(new KeyListener() {
-        //animations
+            //animations
+            // isProcessingKey should do nothing, so you can totally remove it if you want
+            Boolean isProcessingKey = false;
             short state = 2;
 
             Timer jumpRight = new Timer(50, new ActionListener() {
@@ -41,7 +43,9 @@ public class Main {
                     switch (state) {
                         case 2 -> { kizi.setIcon(Texture.KJR2.image); state++; }
                         case 3 -> { kizi.setIcon(Texture.KJR3.image); state++; }
-                        case 4 -> { kizi.setIcon(Texture.KSR.image); state = 2; jumpRight.stop(); 
+                        case 4 -> { kizi.setIcon(Texture.KSR.image); state = 2;
+                            kizi.setCheckpoint();
+                            jumpRight.stop(); 
                             if(kizi.getX() == flower.getX() && kizi.getY() == flower.getY()) flower.setLocation(PosX(random), PosY(random)); }
                     }
                     kizi.repaint();
@@ -53,7 +57,9 @@ public class Main {
                     switch (state) {
                         case 2 -> { kizi.setIcon(Texture.KJL2.image); state++; }
                         case 3 -> { kizi.setIcon(Texture.KJL3.image); state++; }
-                        case 4 -> { kizi.setIcon(Texture.KSL.image); state = 2; jumpLeft.stop();
+                        case 4 -> { kizi.setIcon(Texture.KSL.image); state = 2;
+                            kizi.setCheckpoint();
+                            jumpLeft.stop();
                             if(kizi.getX() == flower.getX() && kizi.getY() == flower.getY()) flower.setLocation(PosX(random), PosY(random)); }
                     }
                     kizi.repaint();
@@ -65,7 +71,9 @@ public class Main {
                     switch (state) {
                         case 2 -> { kizi.setIcon(Texture.KJU2.image); state++; }
                         case 3 -> { kizi.setIcon(Texture.KJU3.image); state++; }
-                        case 4 -> { kizi.setIcon(Texture.KSU.image); state = 2; jumpUp.stop();
+                        case 4 -> { kizi.setIcon(Texture.KSU.image); state = 2;
+                            kizi.setCheckpoint();
+                            jumpUp.stop();
                             if(kizi.getX() == flower.getX() && kizi.getY() == flower.getY()) flower.setLocation(PosX(random), PosY(random)); }
                     }
                     kizi.repaint();
@@ -77,21 +85,82 @@ public class Main {
                     switch (state) {
                         case 2 -> { kizi.setIcon(Texture.KJD2.image); state++; }
                         case 3 -> { kizi.setIcon(Texture.KJD3.image); state++; }
-                        case 4 -> { kizi.setIcon(Texture.KSD.image); state = 2; jumpDown.stop();
+                        case 4 -> { kizi.setIcon(Texture.KSD.image); state = 2;
+                            kizi.setCheckpoint();
+                            jumpDown.stop();
                             if(kizi.getX() == flower.getX() && kizi.getY() == flower.getY()) flower.setLocation(PosX(random), PosY(random)); }
                     }
                     kizi.repaint();
                 }
             });
-
-            public void keyTyped(KeyEvent e){}
-
-            public void keyPressed(KeyEvent e) {
-            //movement
-                switch(e.getKeyCode()){
+            KeyEvent keyToProcess;
+            Timer processKey = new Timer(16, new ActionListener() {
+            public void actionPerformed(ActionEvent e){
+                //movement
+                Boolean isMoving = jumpUp.isRunning() || jumpDown.isRunning() || jumpLeft.isRunning() || jumpRight.isRunning();
+                int keyCode = keyToProcess.getKeyCode();
+                
+                // if the player tries to press a different direction while we are moving, stop moving, return to the tile we came from, and then use the next switch statement to start moving again;
+                Boolean stopMoving = false;
+                if(isMoving) switch(keyCode) {
                     //left
                     case 37 -> {
-                        if(kizi.getX() != 0 && !jumpLeft.isRunning() && !jumpRight.isRunning() && !jumpUp.isRunning() && !jumpDown.isRunning()) {
+                        if(!jumpLeft.isRunning()){
+                            stopMoving = true;
+                        }
+                    }
+                    //up
+                    case 38 -> {
+                        if(!jumpUp.isRunning()){
+                            stopMoving = true;
+                        }
+                     }
+                     //right
+                    case 39 -> {
+                        if(!jumpRight.isRunning()) {
+                            stopMoving = true;
+                        }
+                    }
+                    //down
+                    case 40 -> {
+                        if(!jumpDown.isRunning()){
+                            stopMoving = true;
+                        }
+                     }
+                }
+                
+                if(stopMoving){
+                    if(jumpLeft.isRunning()){
+                        // if(state < 4)
+                        jumpLeft.getActionListeners()[0].actionPerformed(e);
+                        jumpLeft.stop();
+                    }
+                    if(jumpUp.isRunning()){
+                        // if(state < 4)
+                        jumpUp.getActionListeners()[0].actionPerformed(e);
+                        jumpUp.stop();
+                    }
+                    if(jumpRight.isRunning()){
+                        // if(state < 4)
+                        jumpRight.getActionListeners()[0].actionPerformed(e);
+                        jumpRight.stop();
+                    }
+                    if(jumpDown.isRunning()){
+                        // if(state < 4)
+                        jumpDown.getActionListeners()[0].actionPerformed(e);
+                        jumpDown.stop();
+                    }
+                    kizi.returnToCheckpoint();
+                    state = 2;
+                    isMoving = false;
+                }
+                
+                // move if we're not moving, or move if we changed directions, as described above;
+                if(!isMoving) switch(keyCode) {
+                    //left
+                    case 37 -> {
+                        if(kizi.getX() != 0) {
+                            kizi.setCheckpoint();
                             kizi.setLocation(kizi.getX() - 16, kizi.getY());
                             kizi.setIcon(Texture.KJL1.image);
                             kizi.repaint();
@@ -99,8 +168,9 @@ public class Main {
                         }
                     }
                     //up
-                    case 38-> {
-                        if(kizi.getY() != 0 && !jumpUp.isRunning() && !jumpDown.isRunning() && !jumpLeft.isRunning() && !jumpRight.isRunning()) {
+                    case 38 -> {
+                        if(kizi.getY() != 0) {
+                            kizi.setCheckpoint();
                             kizi.setLocation(kizi.getX(), kizi.getY() - 16);
                             kizi.setIcon(Texture.KJU1.image);
                             kizi.repaint();
@@ -109,7 +179,8 @@ public class Main {
                      }
                      //right
                     case 39 -> {
-                        if(kizi.getX() != 960 && !jumpRight.isRunning() && !jumpLeft.isRunning() && !jumpUp.isRunning() && !jumpDown.isRunning()) { 
+                        if(kizi.getX() != 960) {
+                            kizi.setCheckpoint();
                             kizi.setLocation(kizi.getX() + 16, kizi.getY());
                             kizi.setIcon(Texture.KJR1.image);
                             kizi.repaint();
@@ -118,14 +189,28 @@ public class Main {
                     }
                     //down
                     case 40 -> {
-                        if(kizi.getY() != 704 && !jumpUp.isRunning() && !jumpDown.isRunning() && !jumpLeft.isRunning() && !jumpRight.isRunning()) {
+                        if(kizi.getY() != 704) {
+                            kizi.setCheckpoint();
                             kizi.setLocation(kizi.getX(), kizi.getY() + 16);
                             kizi.setIcon(Texture.KJD1.image);
                             kizi.repaint();
                             jumpDown.start();
                         }
-                     }
+                    }
                 }
+                
+                processKey.stop();
+            }
+            });
+            
+            public void keyTyped(KeyEvent e){}
+
+            public void keyPressed(KeyEvent e) {
+                if(isProcessingKey) return;
+                isProcessingKey = true;
+                keyToProcess = e;
+                processKey.start();
+                isProcessingKey = false;
             }
 
             public void keyReleased(KeyEvent e) {}
